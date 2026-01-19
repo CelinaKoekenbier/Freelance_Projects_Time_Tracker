@@ -280,6 +280,20 @@
         font-size: 11px;
         text-align: center;
       }
+
+      .data-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        padding-top: 4px;
+      }
+
+      .data-buttons .btn.outline {
+        width: auto;
+        margin: 8px 0 0;
+        padding: 6px 10px;
+        font-size: 11px;
+      }
     </style>
   </head>
   <body>
@@ -325,8 +339,12 @@
       </div>
 
       <section class="section">
-        <h2>Data</h2>
-        <button class="btn outline" id="export-json">Export data (json)</button>
+        <h2>Data Export</h2>
+        <div class="data-buttons">
+          <button class="btn outline" id="export-pdf">PDF</button>
+          <button class="btn outline" id="export-json">JSON</button>
+          <button class="btn outline" id="export-csv">CSV</button>
+        </div>
       </section>
     </div>
 
@@ -358,7 +376,9 @@
       const saveProjectBtn = document.getElementById("save-project");
       const cancelAddBtn = document.getElementById("cancel-add");
       const formMessage = document.getElementById("form-message");
+      const exportPdfBtn = document.getElementById("export-pdf");
       const exportBtn = document.getElementById("export-json");
+      const exportCsvBtn = document.getElementById("export-csv");
 
       const generateId = (prefix) =>
         `${prefix}-${Math.random().toString(16).slice(2, 9)}`;
@@ -369,6 +389,28 @@
         const secs = String(seconds % 60).padStart(2, "0");
         return `${hrs}:${mins}:${secs}`;
       };
+
+      const csvEscape = (value) =>
+        `"${String(value).replace(/"/g, '""')}"`;
+
+      const buildExportData = () => ({
+        clients: state.clients.map((client) => ({
+          name: client.name,
+          projects: client.projects.map((project) => {
+            const hours = Math.floor(project.totalSeconds / 3600);
+            const minutes = Math.floor((project.totalSeconds % 3600) / 60);
+            const seconds = project.totalSeconds % 60;
+            return {
+              name: project.name,
+              hours,
+              minutes,
+              seconds,
+              totalSeconds: project.totalSeconds,
+              time: formatTime(project.totalSeconds),
+            };
+          }),
+        })),
+      });
 
       const loadData = () => {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -765,18 +807,7 @@
       });
 
       exportBtn.addEventListener("click", () => {
-        const payload = {
-          clients: state.clients.map((client) => ({
-            name: client.name,
-            projects: client.projects.map((project) => ({
-              name: project.name,
-              hours: Math.floor(project.totalSeconds / 3600),
-              minutes: Math.floor((project.totalSeconds % 3600) / 60),
-              seconds: project.totalSeconds % 60,
-              totalSeconds: project.totalSeconds,
-            })),
-          })),
-        };
+        const payload = buildExportData();
         const blob = new Blob([JSON.stringify(payload, null, 2)], {
           type: "application/json",
         });
@@ -784,6 +815,101 @@
         const link = document.createElement("a");
         link.href = url;
         link.download = "freelancer-tracker-data.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      exportPdfBtn.addEventListener("click", () => {
+        const data = buildExportData();
+        const html = `
+          <html>
+            <head>
+              <title>Freelancer Tracker Export</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 24px; color: #1c1c1c; }
+                h1 { font-size: 20px; margin-bottom: 16px; }
+                h2 { font-size: 14px; margin: 18px 0 6px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+                th, td { border: 1px solid #d9d9d9; padding: 6px 8px; font-size: 12px; }
+                th { background: #f3f3f3; text-align: left; }
+              </style>
+            </head>
+            <body>
+              <h1>Freelancer Hour Tracker - Data Export</h1>
+              ${data.clients
+                .map(
+                  (client) => `
+                    <h2>Client: ${client.name}</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Project</th>
+                          <th>Time</th>
+                          <th>Hours</th>
+                          <th>Minutes</th>
+                          <th>Seconds</th>
+                          <th>Total Seconds</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${client.projects
+                          .map(
+                            (project) => `
+                              <tr>
+                                <td>${project.name}</td>
+                                <td>${project.time}</td>
+                                <td>${project.hours}</td>
+                                <td>${project.minutes}</td>
+                                <td>${project.seconds}</td>
+                                <td>${project.totalSeconds}</td>
+                              </tr>
+                            `
+                          )
+                          .join("")}
+                      </tbody>
+                    </table>
+                  `
+                )
+                .join("")}
+            </body>
+          </html>
+        `;
+        const popup = window.open("", "_blank");
+        if (!popup) return;
+        popup.document.write(html);
+        popup.document.close();
+        popup.focus();
+        popup.print();
+      });
+
+      exportCsvBtn.addEventListener("click", () => {
+        const rows = [
+          ["Client", "Project", "Time", "Hours", "Minutes", "Seconds", "TotalSeconds"],
+        ];
+        state.clients.forEach((client) => {
+          client.projects.forEach((project) => {
+            const hours = Math.floor(project.totalSeconds / 3600);
+            const minutes = Math.floor((project.totalSeconds % 3600) / 60);
+            const seconds = project.totalSeconds % 60;
+            rows.push([
+              client.name,
+              project.name,
+              formatTime(project.totalSeconds),
+              hours,
+              minutes,
+              seconds,
+              project.totalSeconds,
+            ]);
+          });
+        });
+        const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "freelancer-tracker-data.csv";
         document.body.appendChild(link);
         link.click();
         link.remove();
