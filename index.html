@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Freelancer Hour Tracker</title>
+    <style>
+      :root {
+        --mint: #dff2ef;
+        --mint-dark: #1b8f84;
+        --mint-mid: #4db3a8;
+        --mint-light: #eaf7f5;
+        --text: #1c1c1c;
+        --muted: #5f6d6b;
+        --start: #39b7a8;
+        --stop: #e45757;
+        --border: #c9ddda;
+      }
+
+      * {
+        box-sizing: border-box;
+        font-family: "Arial", "Helvetica", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f4f4;
+        color: var(--text);
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 16px;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .app {
+        width: 250px;
+        height: calc(100vh - 32px);
+        background: #ffffff;
+        border: 1px solid #e1e1e1;
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: var(--mint);
+        text-align: center;
+        padding: 18px 14px 16px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+
+      header h1 {
+        margin: 0 0 10px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .current {
+        font-size: 12px;
+        color: var(--text);
+        line-height: 1.4;
+      }
+
+      .current span {
+        font-weight: 700;
+      }
+
+      .timer {
+        margin: 12px 0 4px;
+        font-size: 50px;
+        font-weight: 700;
+        color: var(--mint-mid);
+        letter-spacing: 1px;
+      }
+
+      .timer-labels {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      .btn {
+        border: none;
+        padding: 8px 16px;
+        border-radius: 16px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn.start {
+        background: var(--start);
+        color: #ffffff;
+      }
+
+      .btn.stop {
+        background: var(--stop);
+        color: #ffffff;
+      }
+
+      .btn.ghost {
+        background: var(--mint-mid);
+        color: #ffffff;
+        margin: 0 auto;
+        display: block;
+      }
+
+      .btn.outline {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 80%;
+        margin: 12px auto 16px;
+        display: block;
+      }
+
+      .section {
+        padding: 12px 14px;
+      }
+
+      .list-section {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      #client-list {
+        padding-right: 4px;
+      }
+
+      .add-sticky,
+      .title-sticky {
+        background: #ffffff;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+
+        h2 {
+          margin: 10px;
+          text-align: center;
+        }
+      }
+
+      .section h2 {
+        font-size: 14px;
+        text-align: center;
+        margin: 8px 0 10px;
+      }
+
+      .client {
+        margin-bottom: 40px;
+      }
+
+      .client-title {
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .row-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .project {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 2px 0 4px 18px;
+        font-size: 12px;
+      }
+
+      .project label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+        flex-wrap: nowrap;
+      }
+
+      .project label span {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      input[type="radio"] {
+        accent-color: var(--mint-mid);
+      }
+
+      .row-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .icon-btn {
+        border: none;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+        line-height: 0;
+      }
+
+      .icon-btn svg {
+        width: 14px;
+        height: 14px;
+        stroke: #666;
+      }
+
+      .icon-btn.trash svg {
+        stroke: #999;
+      }
+
+      .icon-btn:hover svg {
+        stroke: var(--mint-dark);
+      }
+
+      .add-form {
+        margin-top: 10px;
+        padding: 10px;
+        background: var(--mint-light);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 12px;
+      }
+
+      .add-form.hidden {
+        display: none;
+      }
+
+      .add-form label {
+        display: block;
+        margin: 6px 0 2px;
+      }
+
+      .add-form input,
+      .add-form select {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+      }
+
+      .add-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+
+      .add-actions button {
+        width: 48%;
+      }
+
+      .message {
+        margin-top: 6px;
+        color: var(--stop);
+        font-size: 11px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Freelancer hour tracker</h1>
+        <div class="current">
+          Client: <span id="current-client">-</span><br />
+          Project: <span id="current-project">-</span>
+        </div>
+        <div class="timer" id="timer">00:00:00</div>
+        <div class="timer-labels">
+          <span>Hours</span>
+          <span>Minutes</span>
+          <span>Seconds</span>
+        </div>
+        <button class="btn start" id="toggle-timer" disabled>START</button>
+      </header>
+      <div class="title-sticky">
+        <h2>Select client</h2>
+      </div>
+      <section class="section list-section">
+        <div id="client-list"></div>
+        <div class="add-form hidden" id="add-form">
+          <label for="client-select">Client</label>
+          <select id="client-select"></select>
+          <div id="new-client-wrapper" class="hidden">
+            <label for="new-client">New client name</label>
+            <input id="new-client" type="text" placeholder="Client name" />
+          </div>
+          <label for="new-project">Project name</label>
+          <input id="new-project" type="text" placeholder="Project name" />
+          <div class="add-actions">
+            <button class="btn start" id="save-project" type="button">SAVE</button>
+            <button class="btn stop" id="cancel-add" type="button">CANCEL</button>
+          </div>
+          <div class="message" id="form-message"></div>
+        </div>
+      </section>
+
+      <div class="add-sticky">
+        <button class="btn ghost" id="toggle-add">ADD NEW</button>
+      </div>
+
+      <section class="section">
+        <h2>Data</h2>
+        <button class="btn outline" id="export-json">Export data (json)</button>
+      </section>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "freelancer-tracker-data";
+      const DEFAULT_DATA = [];
+
+      const state = {
+        clients: [],
+        selectedProjectId: null,
+        selectedClientId: null,
+        isRunning: false,
+        startTimestamp: null,
+        timerInterval: null,
+      };
+
+      const timerEl = document.getElementById("timer");
+      const currentClientEl = document.getElementById("current-client");
+      const currentProjectEl = document.getElementById("current-project");
+      const toggleTimerBtn = document.getElementById("toggle-timer");
+      const clientListEl = document.getElementById("client-list");
+      const listSectionEl = document.querySelector(".list-section");
+      const toggleAddBtn = document.getElementById("toggle-add");
+      const addFormEl = document.getElementById("add-form");
+      const clientSelectEl = document.getElementById("client-select");
+      const newClientWrapper = document.getElementById("new-client-wrapper");
+      const newClientInput = document.getElementById("new-client");
+      const newProjectInput = document.getElementById("new-project");
+      const saveProjectBtn = document.getElementById("save-project");
+      const cancelAddBtn = document.getElementById("cancel-add");
+      const formMessage = document.getElementById("form-message");
+      const exportBtn = document.getElementById("export-json");
+
+      const generateId = (prefix) =>
+        `${prefix}-${Math.random().toString(16).slice(2, 9)}`;
+
+      const formatTime = (seconds) => {
+        const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
+        const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+        const secs = String(seconds % 60).padStart(2, "0");
+        return `${hrs}:${mins}:${secs}`;
+      };
+
+      const loadData = () => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          state.clients = DEFAULT_DATA;
+          saveData();
+          return;
+        }
+        try {
+          const parsed = JSON.parse(raw);
+          state.clients = parsed.clients || DEFAULT_DATA;
+          state.selectedProjectId = parsed.selectedProjectId || null;
+          state.selectedClientId = parsed.selectedClientId || null;
+        } catch (error) {
+          state.clients = DEFAULT_DATA;
+        }
+      };
+
+      const saveData = () => {
+        const payload = {
+          clients: state.clients.map((client) => ({
+            ...client,
+            projects: client.projects.map((project) => {
+              const hrs = Math.floor(project.totalSeconds / 3600);
+              const mins = Math.floor((project.totalSeconds % 3600) / 60);
+              const secs = project.totalSeconds % 60;
+              return {
+                ...project,
+                hours: hrs,
+                minutes: mins,
+                seconds: secs,
+              };
+            }),
+          })),
+          selectedProjectId: state.selectedProjectId,
+          selectedClientId: state.selectedClientId,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      };
+
+      const getSelectedProject = () => {
+        for (const client of state.clients) {
+          const project = client.projects.find(
+            (item) => item.id === state.selectedProjectId
+          );
+          if (project) {
+            return { client, project };
+          }
+        }
+        return null;
+      };
+
+      const updateHeader = () => {
+        const selected = getSelectedProject();
+        if (!selected) {
+          currentClientEl.textContent = "-";
+          currentProjectEl.textContent = "-";
+          timerEl.textContent = "00:00:00";
+          toggleTimerBtn.disabled = true;
+          return;
+        }
+        currentClientEl.textContent = selected.client.name;
+        currentProjectEl.textContent = selected.project.name;
+        timerEl.textContent = formatTime(selected.project.totalSeconds);
+        toggleTimerBtn.disabled = false;
+      };
+
+      const stopTimer = () => {
+        if (!state.isRunning) return;
+        const selected = getSelectedProject();
+        if (selected && state.startTimestamp) {
+          const elapsed = Math.floor(
+            (Date.now() - state.startTimestamp) / 1000
+          );
+          selected.project.totalSeconds += elapsed;
+        }
+        state.isRunning = false;
+        state.startTimestamp = null;
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        toggleTimerBtn.textContent = "START";
+        toggleTimerBtn.classList.remove("stop");
+        toggleTimerBtn.classList.add("start");
+        updateHeader();
+        saveData();
+      };
+
+      const startTimer = () => {
+        const selected = getSelectedProject();
+        if (!selected) return;
+        state.isRunning = true;
+        state.startTimestamp = Date.now();
+        toggleTimerBtn.textContent = "STOP";
+        toggleTimerBtn.classList.remove("start");
+        toggleTimerBtn.classList.add("stop");
+        state.timerInterval = setInterval(() => {
+          const elapsed = Math.floor(
+            (Date.now() - state.startTimestamp) / 1000
+          );
+          timerEl.textContent = formatTime(
+            selected.project.totalSeconds + elapsed
+          );
+          saveData();
+        }, 1000);
+      };
+
+      const renderClients = () => {
+        clientListEl.innerHTML = "";
+        state.clients.forEach((client) => {
+          const clientEl = document.createElement("div");
+          clientEl.className = "client";
+          const title = document.createElement("div");
+          title.className = "client-title";
+          const titleLeft = document.createElement("div");
+          titleLeft.className = "row-left";
+          titleLeft.textContent = client.name;
+          const titleActions = document.createElement("div");
+          titleActions.className = "row-actions";
+          const editClientBtn = document.createElement("button");
+          editClientBtn.className = "icon-btn";
+          editClientBtn.type = "button";
+          editClientBtn.title = "Edit client";
+          editClientBtn.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+          editClientBtn.addEventListener("click", () => {
+            editClient(client.id);
+          });
+          const deleteClientBtn = document.createElement("button");
+          deleteClientBtn.className = "icon-btn trash";
+          deleteClientBtn.type = "button";
+          deleteClientBtn.title = "Delete client";
+          deleteClientBtn.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+          deleteClientBtn.addEventListener("click", () => {
+            deleteClient(client.id);
+          });
+          titleActions.appendChild(editClientBtn);
+          titleActions.appendChild(deleteClientBtn);
+          title.appendChild(titleLeft);
+          title.appendChild(titleActions);
+          clientEl.appendChild(title);
+
+          client.projects.forEach((project) => {
+            const projectEl = document.createElement("div");
+            projectEl.className = "project";
+            const projectLabel = document.createElement("label");
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "project";
+            radio.value = project.id;
+            radio.checked = project.id === state.selectedProjectId;
+            radio.addEventListener("change", () => {
+              if (state.isRunning) {
+                stopTimer();
+              }
+              state.selectedProjectId = project.id;
+              state.selectedClientId = client.id;
+              updateHeader();
+              saveData();
+            });
+            const text = document.createElement("span");
+            text.textContent = project.name;
+            projectLabel.appendChild(radio);
+            projectLabel.appendChild(text);
+            const projectActions = document.createElement("div");
+            projectActions.className = "row-actions";
+            const editProjectBtn = document.createElement("button");
+            editProjectBtn.className = "icon-btn";
+            editProjectBtn.type = "button";
+            editProjectBtn.title = "Edit project";
+            editProjectBtn.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+            editProjectBtn.addEventListener("click", () => {
+              editProject(client.id, project.id);
+            });
+            const deleteProjectBtn = document.createElement("button");
+            deleteProjectBtn.className = "icon-btn trash";
+            deleteProjectBtn.type = "button";
+            deleteProjectBtn.title = "Delete project";
+            deleteProjectBtn.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+            deleteProjectBtn.addEventListener("click", () => {
+              deleteProject(client.id, project.id);
+            });
+            projectActions.appendChild(editProjectBtn);
+            projectActions.appendChild(deleteProjectBtn);
+            projectEl.appendChild(projectLabel);
+            projectEl.appendChild(projectActions);
+            clientEl.appendChild(projectEl);
+          });
+
+          clientListEl.appendChild(clientEl);
+        });
+      };
+
+      const refreshClientSelect = () => {
+        clientSelectEl.innerHTML = "";
+        const newOption = document.createElement("option");
+        newOption.value = "new";
+        newOption.textContent = "New client";
+        clientSelectEl.appendChild(newOption);
+        state.clients.forEach((client) => {
+          const option = document.createElement("option");
+          option.value = client.id;
+          option.textContent = client.name;
+          clientSelectEl.appendChild(option);
+        });
+        clientSelectEl.value = "new";
+        newClientWrapper.classList.remove("hidden");
+      };
+
+      const resetForm = () => {
+        newClientInput.value = "";
+        newProjectInput.value = "";
+        formMessage.textContent = "";
+        refreshClientSelect();
+      };
+
+      const editClient = (clientId) => {
+        const client = state.clients.find((item) => item.id === clientId);
+        if (!client) return;
+        const nextName = window.prompt("Edit client name", client.name);
+        if (!nextName) return;
+        const trimmed = nextName.trim();
+        if (!trimmed) return;
+        const exists = state.clients.some(
+          (item) =>
+            item.id !== clientId &&
+            item.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (exists) {
+          window.alert("This client already exists.");
+          return;
+        }
+        client.name = trimmed;
+        renderClients();
+        updateHeader();
+        refreshClientSelect();
+        saveData();
+      };
+
+      const deleteClient = (clientId) => {
+        const client = state.clients.find((item) => item.id === clientId);
+        if (!client) return;
+        if (!window.confirm(`Delete client "${client.name}" and all projects?`)) {
+          return;
+        }
+        if (state.isRunning) {
+          stopTimer();
+        }
+        state.clients = state.clients.filter((item) => item.id !== clientId);
+        if (state.selectedClientId === clientId) {
+          state.selectedClientId = null;
+          state.selectedProjectId = null;
+        }
+        renderClients();
+        updateHeader();
+        refreshClientSelect();
+        saveData();
+      };
+
+      const editProject = (clientId, projectId) => {
+        const client = state.clients.find((item) => item.id === clientId);
+        if (!client) return;
+        const project = client.projects.find((item) => item.id === projectId);
+        if (!project) return;
+        const nextName = window.prompt("Edit project name", project.name);
+        if (!nextName) return;
+        const trimmed = nextName.trim();
+        if (!trimmed) return;
+        const exists = client.projects.some(
+          (item) =>
+            item.id !== projectId &&
+            item.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (exists) {
+          window.alert("This project already exists.");
+          return;
+        }
+        project.name = trimmed;
+        renderClients();
+        updateHeader();
+        saveData();
+      };
+
+      const deleteProject = (clientId, projectId) => {
+        const client = state.clients.find((item) => item.id === clientId);
+        if (!client) return;
+        const project = client.projects.find((item) => item.id === projectId);
+        if (!project) return;
+        if (!window.confirm(`Delete project "${project.name}"?`)) {
+          return;
+        }
+        if (state.isRunning) {
+          stopTimer();
+        }
+        client.projects = client.projects.filter((item) => item.id !== projectId);
+        if (client.projects.length === 0) {
+          state.clients = state.clients.filter((item) => item.id !== clientId);
+          if (state.selectedClientId === clientId) {
+            state.selectedClientId = null;
+            state.selectedProjectId = null;
+          }
+        } else if (state.selectedProjectId === projectId) {
+          state.selectedProjectId = null;
+          state.selectedClientId = null;
+        }
+        renderClients();
+        updateHeader();
+        refreshClientSelect();
+        saveData();
+      };
+
+      toggleTimerBtn.addEventListener("click", () => {
+        if (state.isRunning) {
+          stopTimer();
+        } else {
+          startTimer();
+        }
+      });
+
+      toggleAddBtn.addEventListener("click", () => {
+        addFormEl.classList.toggle("hidden");
+        if (!addFormEl.classList.contains("hidden")) {
+          resetForm();
+          setTimeout(() => {
+            if (listSectionEl) {
+              listSectionEl.scrollTop = listSectionEl.scrollHeight;
+            }
+            addFormEl.scrollIntoView({ behavior: "smooth", block: "end" });
+          }, 0);
+        }
+      });
+
+      clientSelectEl.addEventListener("change", () => {
+        if (clientSelectEl.value === "new") {
+          newClientWrapper.classList.remove("hidden");
+        } else {
+          newClientWrapper.classList.add("hidden");
+        }
+      });
+
+      saveProjectBtn.addEventListener("click", () => {
+        const projectName = newProjectInput.value.trim();
+        const selectedClientId = clientSelectEl.value;
+        const isNewClient = selectedClientId === "new";
+        const newClientName = newClientInput.value.trim();
+
+        if (!projectName) {
+          formMessage.textContent = "Please add a project name.";
+          return;
+        }
+
+        if (isNewClient && !newClientName) {
+          formMessage.textContent = "Please add a client name.";
+          return;
+        }
+
+        let client = state.clients.find((item) => item.id === selectedClientId);
+        if (isNewClient) {
+          client = {
+            id: generateId("client"),
+            name: newClientName,
+            projects: [],
+          };
+          state.clients.push(client);
+        }
+
+        const exists = client.projects.some(
+          (project) => project.name.toLowerCase() === projectName.toLowerCase()
+        );
+        if (exists) {
+          formMessage.textContent = "This project already exists.";
+          return;
+        }
+
+        const newProject = {
+          id: generateId("proj"),
+          name: projectName,
+          totalSeconds: 0,
+        };
+        client.projects.push(newProject);
+        state.selectedClientId = client.id;
+        state.selectedProjectId = newProject.id;
+        addFormEl.classList.add("hidden");
+        renderClients();
+        updateHeader();
+        refreshClientSelect();
+        saveData();
+      });
+
+      cancelAddBtn.addEventListener("click", () => {
+        addFormEl.classList.add("hidden");
+      });
+
+      exportBtn.addEventListener("click", () => {
+        const payload = {
+          clients: state.clients.map((client) => ({
+            name: client.name,
+            projects: client.projects.map((project) => ({
+              name: project.name,
+              hours: Math.floor(project.totalSeconds / 3600),
+              minutes: Math.floor((project.totalSeconds % 3600) / 60),
+              seconds: project.totalSeconds % 60,
+              totalSeconds: project.totalSeconds,
+            })),
+          })),
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "freelancer-tracker-data.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      loadData();
+      renderClients();
+      updateHeader();
+      refreshClientSelect();
+    </script>
+  </body>
+</html>
+
